@@ -1,20 +1,18 @@
 using Microsoft.Win32;
-using System.Diagnostics;
-using System.Runtime.Versioning;
 
 namespace Dejavu.Core.Services;
 
-[SupportedOSPlatform("windows")]
 public class ThawOnceService
 {
     private const string RegSubKey = @"SOFTWARE\Dejavu";
     private const string ValueName = "ThawOnceActive";
-    private const string TaskName = "Dejavu_FinalizeThawOnce";
     private readonly LoggerService _logger;
+    private readonly ScheduledTaskService _tasks;
 
-    public ThawOnceService(LoggerService logger)
+    public ThawOnceService(LoggerService logger, ScheduledTaskService tasks)
     {
         _logger = logger;
+        _tasks = tasks;
     }
 
     public bool IsThawOnceActive()
@@ -38,25 +36,16 @@ public class ThawOnceService
 
     public void ArmThawOnce()
     {
-        if (!OperatingSystem.IsWindows()) return;
         try
         {
-            using var key = Registry.LocalMachine.CreateSubKey(RegSubKey);
-            key.SetValue(ValueName, 1, RegistryValueKind.DWord);
-
-            // Cria ou atualiza Tarefa Agendada no Windows para rodar como SYSTEM no próximo logon/inicialização
-            string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "dejavu.exe";
-            string schtasksArgs = $"/Create /F /TN \"{TaskName}\" /TR \"\"{exePath}\" --finalize-thaw-once\" /SC ONSTART /RU SYSTEM /RL HIGHEST";
-
-            var psi = new ProcessStartInfo(
-                "schtasks.exe",
-                schtasksArgs
-            )
+            if (OperatingSystem.IsWindows())
             {
-                CreateNoWindow = true,
-                UseShellExecute = false
-            };
-            Process.Start(psi)?.WaitForExit();
+                using var key = Registry.LocalMachine.CreateSubKey(RegSubKey);
+                key.SetValue(ValueName, 1, RegistryValueKind.DWord);
+            }
+
+            // Tarefa executada como SYSTEM na inicialização descongelada, que programa o recongelamento.
+            _tasks.CreateOnStartTask(ScheduledTaskService.ThawOnceTask, "--finalize-thaw-once");
 
             _logger.Log(LogLevel.Info, "Thaw-Once armado com sucesso: o sistema descongelará no próximo boot e recongelará automaticamente no boot seguinte.");
         }
@@ -69,25 +58,15 @@ public class ThawOnceService
 
     public void ClearThawOnce()
     {
-        if (!OperatingSystem.IsWindows()) return;
         try
         {
-            using var key = Registry.LocalMachine.OpenSubKey(RegSubKey, true);
-            if (key != null)
+            if (OperatingSystem.IsWindows())
             {
-                key.DeleteValue(ValueName, false);
+                using var key = Registry.LocalMachine.OpenSubKey(RegSubKey, true);
+                key?.DeleteValue(ValueName, false);
             }
 
-            // Remove a tarefa agendada
-            var psi = new ProcessStartInfo(
-                "schtasks.exe",
-                $"/Delete /F /TN \"{TaskName}\""
-            )
-            {
-                CreateNoWindow = true,
-                UseShellExecute = false
-            };
-            Process.Start(psi)?.WaitForExit();
+            _tasks.DeleteTask(ScheduledTaskService.ThawOnceTask);
         }
         catch
         {

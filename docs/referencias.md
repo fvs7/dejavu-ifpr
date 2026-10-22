@@ -16,7 +16,7 @@ O projeto Dejavu IFPR é desenvolvido em estrita conformidade com o método **Cl
 * **Unified Write Filter (UWF):**
   - Visão Geral do UWF: https://learn.microsoft.com/en-us/windows/iot/iot-enterprise/customize/unified-write-filter
   - WMI Provider Reference (`root\standardcimv2\embedded`): https://learn.microsoft.com/en-us/windows-hardware/customize/enterprise/uwf-wmi-provider-reference
-  - Classes WMI: `UWF_Filter`, `UWF_Volume`, `UWF_Overlay`, `UWF_RegistryFilter`, `UWF_FileFilter`.
+  - Classes WMI utilizadas: `UWF_Filter`, `UWF_Volume` (proteção e exclusões de arquivo), `UWF_Overlay` (consumo e limites), `UWF_OverlayConfig` (tipo e tamanho máximo) e `UWF_RegistryFilter` (exclusões de registro).
   - Gerenciamento de Overlay (RAM vs Disk-backed): https://learn.microsoft.com/en-us/windows-hardware/customize/enterprise/uwf-overlay-location-and-size
   - Exclusões de Arquivos e Registro: https://learn.microsoft.com/en-us/windows-hardware/customize/enterprise/uwf-exclusions
   - Integração com Domínio Active Directory e Conta de Máquina: https://learn.microsoft.com/en-us/troubleshoot/windows-server/identity/machine-account-password-process

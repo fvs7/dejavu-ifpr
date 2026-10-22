@@ -1,16 +1,21 @@
-using System.Diagnostics;
+using Dejavu.Core.Infrastructure;
 
 namespace Dejavu.Core.Services;
 
 public class OverlayMonitorService
 {
+    public const int RebootDelaySeconds = 60;
+    private const string RebootMessage = "O espaço temporário de memória do computador está esgotado. Para evitar congelamento do sistema, o computador será reiniciado em 60 segundos. Salve seu trabalho!";
+
     private readonly LoggerService _logger;
     private readonly IUwfController _uwf;
+    private readonly IProcessRunner _runner;
 
-    public OverlayMonitorService(LoggerService logger, IUwfController uwf)
+    public OverlayMonitorService(LoggerService logger, IUwfController uwf, IProcessRunner runner)
     {
         _logger = logger;
         _uwf = uwf;
+        _runner = runner;
     }
 
     public void CheckOverlayAndEnforcePolicy()
@@ -27,8 +32,8 @@ public class OverlayMonitorService
 
         if (crit > 0 && current >= crit)
         {
-            _logger.Log(LogLevel.Critical, $"[Overlay Crítico] Uso atingiu {current}MB (Limite: {crit}MB). Notificando e agendando reboot preventivo em 60 segundos!");
-            TriggerRebootNotification(60, "O espaço temporário de memória do computador está esgotado. Para evitar congelamento do sistema, o computador será reiniciado em 60 segundos. Salve seu trabalho!");
+            _logger.Log(LogLevel.Critical, $"[Overlay Crítico] Uso atingiu {current}MB (Limite: {crit}MB). Notificando e agendando reboot preventivo em {RebootDelaySeconds} segundos!");
+            TriggerRebootNotification();
         }
         else if (warn > 0 && current >= warn)
         {
@@ -36,20 +41,13 @@ public class OverlayMonitorService
         }
     }
 
-    private void TriggerRebootNotification(int seconds, string message)
+    private void TriggerRebootNotification()
     {
-        if (!OperatingSystem.IsWindows()) return;
-
         try
         {
-            // Invoca shutdown.exe com contagem regressiva e aviso ao usuário da sessão interativa
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "shutdown.exe",
-                Arguments = $"/r /t {seconds} /c \"{message}\" /f",
-                CreateNoWindow = true,
-                UseShellExecute = false
-            });
+            // Contagem regressiva com aviso ao usuário da sessão interativa. Se já houver um
+            // desligamento agendado (verificação anterior), o shutdown.exe apenas retorna erro.
+            _runner.Run("shutdown.exe", new[] { "/r", "/f", "/t", RebootDelaySeconds.ToString(), "/c", RebootMessage }, TimeSpan.FromMinutes(1));
         }
         catch (Exception ex)
         {

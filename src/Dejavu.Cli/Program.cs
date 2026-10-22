@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using Dejavu.Core.Infrastructure;
 using Dejavu.Core.Models;
 
 namespace Dejavu.Cli;
@@ -9,13 +10,16 @@ class Program
     static int Main(string[] args)
     {
         var logger = new Dejavu.Core.Services.LoggerService();
-        var thawOnce = new Dejavu.Core.Services.ThawOnceService(logger);
+        var runner = new ProcessRunner();
+        var tasks = new Dejavu.Core.Services.ScheduledTaskService(runner, logger);
+        var thawOnce = new Dejavu.Core.Services.ThawOnceService(logger, tasks);
         var uwf = new Dejavu.Core.Services.UwfController(logger, thawOnce);
         var profileService = new Dejavu.Core.Services.ProfileService(logger);
         var domainService = new Dejavu.Core.Services.DomainService(logger);
         var thawSpaceService = new Dejavu.Core.Services.ThawSpaceService(logger);
-        var maintenanceService = new Dejavu.Core.Services.MaintenanceService(logger, uwf, thawOnce);
-        var overlayMonitor = new Dejavu.Core.Services.OverlayMonitorService(logger, uwf);
+        var maintenanceService = new Dejavu.Core.Services.MaintenanceService(
+            logger, uwf, tasks, runner, new RegistryStateStore(Dejavu.Core.Services.MaintenanceService.StateKeyPath));
+        var overlayMonitor = new Dejavu.Core.Services.OverlayMonitorService(logger, uwf, runner);
 
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
         {
@@ -55,6 +59,9 @@ class Program
 
                 case "check-overlay":
                     return HandleCheckOverlay(overlayMonitor);
+
+                case "setup-overlay-monitor":
+                    return HandleSetupOverlayMonitor(tasks, args);
 
                 case "--finalize-thaw-once":
                     return HandleFinalizeThawOnce(uwf, thawOnce, logger);
@@ -200,34 +207,18 @@ class Program
 
     static int HandleConfigOverlay(Dejavu.Core.Services.IUwfController uwf, string[] args)
     {
-        OverlayType type = OverlayType.RAM;
-        uint maxMb = 4096;
-        uint warnMb = 3072;
-        uint critMb = 3840;
-
-        for (int i = 1; i < args.Length; i++)
+        if (!OverlaySettings.TryParse(args.Skip(1).ToList(), out var settings, out string error))
         {
-            if (args[i].Equals("--type", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                type = args[++i].Equals("disk", StringComparison.OrdinalIgnoreCase) ? OverlayType.Disk : OverlayType.RAM;
-            }
-            else if (args[i].Equals("--max-mb", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                maxMb = uint.Parse(args[++i]);
-            }
-            else if (args[i].Equals("--warn-mb", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                warnMb = uint.Parse(args[++i]);
-            }
-            else if (args[i].Equals("--crit-mb", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                critMb = uint.Parse(args[++i]);
-            }
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[ERRO] {error}");
+            Console.ResetColor();
+            return 1;
         }
 
-        uwf.ConfigureOverlay(type, maxMb, warnMb, critMb);
+        uwf.ConfigureOverlay(settings.Type, settings.MaximumSizeMb, settings.WarningThresholdMb, settings.CriticalThresholdMb);
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"[OK] Overlay configurado: Tipo={type}, Max={maxMb}MB, Warning={warnMb}MB, Critical={critMb}MB");
+        Console.WriteLine($"[OK] Overlay configurado: Tipo={settings.Type}, Max={settings.MaximumSizeMb}MB, Warning={settings.WarningThresholdMb}MB, Critical={settings.CriticalThresholdMb}MB");
+        Console.WriteLine("     Tipo e tamanho máximo passam a valer no próximo boot.");
         Console.ResetColor();
         return 0;
     }
@@ -281,7 +272,7 @@ class Program
 
         maintenanceService.ScheduleMaintenanceWindow();
         Console.ForegroundColor = ConsoleColor.Magenta;
-        Console.WriteLine("[OK] Janela de manutenção agendada! O sistema entrará em Thaw no próximo boot e executará as atualizações antes de recongelar.");
+        Console.WriteLine("[OK] Janela de manutenção agendada! No próximo boot o sistema inicia DESCONGELADO, executa as atualizações e então recongela e reinicia.");
         Console.ResetColor();
         return 0;
     }
@@ -289,6 +280,30 @@ class Program
     static int HandleCheckOverlay(Dejavu.Core.Services.OverlayMonitorService overlayMonitor)
     {
         overlayMonitor.CheckOverlayAndEnforcePolicy();
+        return 0;
+    }
+
+    static int HandleSetupOverlayMonitor(Dejavu.Core.Services.ScheduledTaskService tasks, string[] args)
+    {
+        int interval = 5;
+        for (int i = 1; i < args.Length; i++)
+        {
+            if (args[i].Equals("--interval", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                if (!int.TryParse(args[++i], out interval) || interval < 1 || interval > 1439)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("[ERRO] --interval deve ser um número de minutos entre 1 e 1439.");
+                    Console.ResetColor();
+                    return 1;
+                }
+            }
+        }
+
+        tasks.CreateRecurringTask(Dejavu.Core.Services.ScheduledTaskService.OverlayMonitorTask, "check-overlay", interval);
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"[OK] Monitor do overlay agendado: 'check-overlay' será executado a cada {interval} minuto(s) como SYSTEM.");
+        Console.ResetColor();
         return 0;
     }
 
@@ -323,5 +338,6 @@ class Program
         Console.WriteLine("  setup-thawspace [pasta]                Cria e exclui pasta persistente (padrão: C:\\Persistente)");
         Console.WriteLine("  maintenance [--run]                    Agenda janela de manutenção (--run executa a rotina)");
         Console.WriteLine("  check-overlay                          Verifica uso de overlay e reinicia se atingir nível crítico");
+        Console.WriteLine("  setup-overlay-monitor [--interval N]   Agenda o check-overlay a cada N minutos (padrão: 5)");
     }
 }

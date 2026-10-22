@@ -1,6 +1,6 @@
 # ADR 001: Mecanismo de Congelamento de Estado (Deep Freeze Open Source)
 
-* **Status:** Proposta (Aguardando aprovação para Fase 1)
+* **Status:** Aceita — implementada nas Fases 1 e 2 (Windows/UWF). Opção C (Linux) pendente para a Fase 3.
 * **Data:** 22/10/2026
 * **Autor:** Fernando Vieira (Técnico de TI - IFPR União da Vitória)
 * **Contexto:** Projeto Dejavu IFPR — Restauração de estado limpo a cada reinicialização nos computadores dos laboratórios acadêmicos.

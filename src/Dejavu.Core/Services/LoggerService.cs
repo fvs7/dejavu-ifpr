@@ -58,7 +58,7 @@ public class LoggerService
                 EventLogEntryType type = level switch
                 {
                     LogLevel.Warning => EventLogEntryType.Warning,
-                    LogLevel.Error => EventLogEntryType.Error,
+                    LogLevel.Error or LogLevel.Critical => EventLogEntryType.Error,
                     _ => EventLogEntryType.Information
                 };
 
