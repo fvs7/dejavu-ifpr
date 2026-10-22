@@ -1,5 +1,5 @@
 using ReaFreeze.Core.Services;
-Xunit;
+using Xunit;
 
 namespace ReaFreeze.Tests;
 
