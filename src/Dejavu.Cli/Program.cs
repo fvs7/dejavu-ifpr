@@ -16,6 +16,8 @@ class Program
         var thawSpaceService = new Dejavu.Core.Services.ThawSpaceService(logger);
         var maintenanceService = new Dejavu.Core.Services.MaintenanceService(logger, uwf, thawOnce);
         var overlayMonitor = new Dejavu.Core.Services.OverlayMonitorService(logger, uwf);
+        var apiServer = new Dejavu.Core.Services.ApiServerService(logger, uwf, thawOnce, maintenanceService);
+        var clusterManager = new Dejavu.Core.Services.ClusterManagerService(logger);
 
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
         {
@@ -55,6 +57,12 @@ class Program
 
                 case "check-overlay":
                     return HandleCheckOverlay(overlayMonitor);
+
+                case "serve":
+                    return HandleServe(apiServer, args);
+
+                case "cluster":
+                    return HandleCluster(clusterManager, args).GetAwaiter().GetResult();
 
                 case "--finalize-thaw-once":
                     return HandleFinalizeThawOnce(uwf, thawOnce, logger);
@@ -304,6 +312,112 @@ class Program
         return 0;
     }
 
+    static int HandleServe(Dejavu.Core.Services.ApiServerService apiServer, string[] args)
+    {
+        int port = 7777;
+        string token = "";
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if (args[i].Equals("--port", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                port = int.Parse(args[++i]);
+            }
+            else if (args[i].Equals("--token", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                token = args[++i];
+            }
+        }
+
+        Console.WriteLine($"Iniciando agente HTTP Dejavu na porta {port}... Pressione Ctrl+C para encerrar.");
+        apiServer.Start(port, token);
+        return 0;
+    }
+
+    static async Task<int> HandleCluster(Dejavu.Core.Services.ClusterManagerService clusterManager, string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Uso: dejavu cluster <status|freeze|thaw|restart> --hosts <arquivo> [opções]");
+            return 1;
+        }
+
+        string subAction = args[1].ToLowerInvariant();
+        string hostsFile = "";
+        int port = 7777;
+        string token = "";
+        string htmlPath = "";
+        string csvPath = "";
+        bool restart = false;
+        bool once = false;
+
+        for (int i = 2; i < args.Length; i++)
+        {
+            if (args[i].Equals("--hosts", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                hostsFile = args[++i];
+            else if (args[i].Equals("--port", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                port = int.Parse(args[++i]);
+            else if (args[i].Equals("--token", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                token = args[++i];
+            else if (args[i].Equals("--html", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                htmlPath = args[++i];
+            else if (args[i].Equals("--csv", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+                csvPath = args[++i];
+            else if (args[i].Equals("--restart", StringComparison.OrdinalIgnoreCase))
+                restart = true;
+            else if (args[i].Equals("--once", StringComparison.OrdinalIgnoreCase))
+                once = true;
+        }
+
+        if (string.IsNullOrEmpty(hostsFile) || !File.Exists(hostsFile))
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Arquivo de hosts inválido ou não encontrado: {hostsFile}");
+            Console.ResetColor();
+            return 1;
+        }
+
+        var hosts = (await File.ReadAllLinesAsync(hostsFile))
+            .Select(h => h.Trim())
+            .Where(h => !string.IsNullOrEmpty(h) && !h.StartsWith("#"))
+            .ToList();
+
+        Console.WriteLine($"Disparando ação '{subAction}' para {hosts.Count} estações em paralelo...");
+
+        string endpoint = subAction switch
+        {
+            "status" => "/api/v1/status",
+            "freeze" => $"/api/v1/freeze?restart={restart}",
+            "thaw" => $"/api/v1/thaw?once={once}&restart={restart}",
+            "restart" => "/api/v1/restart",
+            _ => throw new ArgumentException($"Subcomando de cluster desconhecido: {subAction}")
+        };
+
+        var method = subAction == "status" ? HttpMethod.Get : HttpMethod.Post;
+        var results = await clusterManager.ExecuteActionAsync(hosts, port, token, endpoint, method);
+
+        int successCount = results.Count(r => r.Success);
+        Console.ForegroundColor = successCount == hosts.Count ? ConsoleColor.Green : ConsoleColor.Yellow;
+        Console.WriteLine($"[Resultado] {successCount}/{hosts.Count} máquinas responderam com sucesso.");
+        Console.ResetColor();
+
+        if (!string.IsNullOrEmpty(htmlPath))
+        {
+            string html = Dejavu.Core.Services.ClusterManagerService.GenerateHtmlReport(results);
+            await File.WriteAllTextAsync(htmlPath, html);
+            Console.WriteLine($"Relatório HTML gravado em: {htmlPath}");
+        }
+
+        if (!string.IsNullOrEmpty(csvPath))
+        {
+            string csv = Dejavu.Core.Services.ClusterManagerService.GenerateCsvReport(results);
+            await File.WriteAllTextAsync(csvPath, csv);
+            Console.WriteLine($"Relatório CSV gravado em: {csvPath}");
+        }
+
+        return successCount == hosts.Count ? 0 : 1;
+    }
+
     static void PrintHelp()
     {
         Console.WriteLine("Dejavu IFPR — Equivalente Open Source ao Deep Freeze (IFPR / REA)");
@@ -323,5 +437,7 @@ class Program
         Console.WriteLine("  setup-thawspace [pasta]                Cria e exclui pasta persistente (padrão: C:\\Persistente)");
         Console.WriteLine("  maintenance [--run]                    Agenda janela de manutenção (--run executa a rotina)");
         Console.WriteLine("  check-overlay                          Verifica uso de overlay e reinicia se atingir nível crítico");
+        Console.WriteLine("  serve [--port 7777] [--token <segredo>] Inicia o serviço de API REST local autenticado");
+        Console.WriteLine("  cluster <ação> --hosts <txt> [opts] Executa ações em lote (status|freeze|thaw|restart)");
     }
 }
