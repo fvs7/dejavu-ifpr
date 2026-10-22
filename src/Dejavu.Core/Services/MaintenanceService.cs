@@ -1,14 +1,14 @@
 using System.Diagnostics;
 using Microsoft.Win32;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 public class MaintenanceService
 {
     private readonly LoggerService _logger;
     private readonly IUwfController _uwf;
     private readonly ThawOnceService _thawOnce;
-    private const string LockKeyPath = @"SOFTWARE\ReaFreeze\Maintenance";
+    private const string LockKeyPath = @"SOFTWARE\Dejavu\Maintenance";
 
     public MaintenanceService(LoggerService logger, IUwfController uwf, ThawOnceService thawOnce)
     {

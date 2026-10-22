@@ -2,14 +2,14 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 [SupportedOSPlatform("windows")]
 public class ThawOnceService
 {
-    private const string RegSubKey = @"SOFTWARE\ReaFreeze";
+    private const string RegSubKey = @"SOFTWARE\Dejavu";
     private const string ValueName = "ThawOnceActive";
-    private const string TaskName = "ReaFreeze_FinalizeThawOnce";
+    private const string TaskName = "Dejavu_FinalizeThawOnce";
     private readonly LoggerService _logger;
 
     public ThawOnceService(LoggerService logger)
@@ -45,7 +45,7 @@ public class ThawOnceService
             key.SetValue(ValueName, 1, RegistryValueKind.DWord);
 
             // Cria ou atualiza Tarefa Agendada no Windows para rodar como SYSTEM no próximo logon/inicialização
-            string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "reafreeze.exe";
+            string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "dejavu.exe";
             string schtasksArgs = $"/Create /F /TN \"{TaskName}\" /TR \"\"{exePath}\" --finalize-thaw-once\" /SC ONSTART /RU SYSTEM /RL HIGHEST";
 
             var psi = new ProcessStartInfo(

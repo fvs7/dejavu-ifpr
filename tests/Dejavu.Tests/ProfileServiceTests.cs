@@ -1,7 +1,7 @@
-using ReaFreeze.Core.Services;
+using Dejavu.Core.Services;
 using Xunit;
 
-namespace ReaFreeze.Tests;
+namespace Dejavu.Tests;
 
 public class ProfileServiceTests
 {
@@ -36,7 +36,7 @@ public class ProfileServiceTests
         var service = new ProfileService(logger);
         var mock = new MockUwfController();
 
-        var profile = new ReaFreeze.Core.Models.ExclusionProfile
+        var profile = new Dejavu.Core.Models.ExclusionProfile
         {
             Version = "1.0",
             FileAndFolderExclusions = { @"C:\ProgramData\Veyon", @"C:\Persistente" },

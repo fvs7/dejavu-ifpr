@@ -1,6 +1,6 @@
-using ReaFreeze.Core.Models;
+using Dejavu.Core.Models;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 public interface IUwfController
 {

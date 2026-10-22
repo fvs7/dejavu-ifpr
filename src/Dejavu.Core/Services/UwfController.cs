@@ -1,8 +1,8 @@
 using System.Management;
 using System.Runtime.Versioning;
-using ReaFreeze.Core.Models;
+using Dejavu.Core.Models;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 [SupportedOSPlatform("windows")]
 public class UwfController : IUwfController

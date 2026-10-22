@@ -1,8 +1,8 @@
-using ReaFreeze.Core.Models;
-using ReaFreeze.Core.Services;
+using Dejavu.Core.Models;
+using Dejavu.Core.Services;
 using Xunit;
 
-namespace ReaFreeze.Tests;
+namespace Dejavu.Tests;
 
 public class DomainAndMaintenanceTests
 {
@@ -13,7 +13,7 @@ public class DomainAndMaintenanceTests
         var mock = new MockUwfController();
         var thawSpace = new ThawSpaceService(logger);
 
-        string target = Path.Combine(Path.GetTempPath(), "ReaFreezeTestPersistente");
+        string target = Path.Combine(Path.GetTempPath(), "DejavuTestPersistente");
         try
         {
             thawSpace.EnsureDirectoryThawSpace(mock, target);

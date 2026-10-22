@@ -30,7 +30,7 @@ Se a máquina estiver congelada, a troca de senha ocorre na memória do Windows 
 
 ## Decisão
 Adotar a **Opção 2 combinada com a Opção 3**:
-1. O comando `reafreeze domain-setup` aplicará automaticamente `DisablePasswordChange = 1` em `HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.
+1. O comando `dejavu domain-setup` aplicará automaticamente `DisablePasswordChange = 1` em `HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.
 2. Excluir explicitamente a pasta `%SystemRoot%\System32\GroupPolicy` e os arquivos de cache de kerberos/GPO para garantir que alterações de políticas institucionais sejam lidas do controlador de domínio sem inconsistências.
 3. Permitir renovação forçada sob demanda via CLI em modo Thawed se o administrador desejar.
 

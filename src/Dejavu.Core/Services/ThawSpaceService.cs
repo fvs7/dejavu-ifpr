@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 public class ThawSpaceService
 {

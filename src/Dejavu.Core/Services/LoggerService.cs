@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 public enum LogLevel
 {
@@ -12,7 +12,7 @@ public enum LogLevel
 
 public class LoggerService
 {
-    private const string EventSourceName = "REA Freeze";
+    private const string EventSourceName = "Dejavu IFPR";
     private const string EventLogName = "Application";
     private readonly string _logFilePath;
     private readonly object _lock = new();
@@ -20,9 +20,9 @@ public class LoggerService
     public LoggerService()
     {
         string programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-        string dir = Path.Combine(programData, "ReaFreeze", "logs");
+        string dir = Path.Combine(programData, "Dejavu", "logs");
         Directory.CreateDirectory(dir);
-        _logFilePath = Path.Combine(dir, "reafreeze.log");
+        _logFilePath = Path.Combine(dir, "dejavu.log");
     }
 
     public void Log(LogLevel level, string message, Exception? ex = null)

@@ -1,4 +1,4 @@
-namespace ReaFreeze.Core.Models;
+namespace Dejavu.Core.Models;
 
 public enum OverlayType
 {
