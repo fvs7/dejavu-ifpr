@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "description": "Perfil padrão de exclusões REA Freeze para laboratórios acadêmicos do IFPR",
+  "fileAndFolderExclusions": [
+    "C:\\ProgramData\\ReaFreeze",
+    "C:\\ProgramData\\Veyon",
+    "C:\\ProgramData\\Microsoft\\Windows Defender",
+    "C:\\Windows\\System32\\GroupPolicy",
+    "C:\\Persistente"
+  ],
+  "registryExclusions": [
+    "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
+    "HKLM\\SOFTWARE\\ReaFreeze",
+    "HKLM\\SOFTWARE\\Veyon",
+    "HKLM\\SOFTWARE\\Microsoft\\Windows Defender"
+  ]
+}
