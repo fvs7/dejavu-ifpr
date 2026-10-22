@@ -14,12 +14,8 @@ public class ProfileServiceTests
         string tempFile = Path.GetTempFileName();
         try
         {
-            File.WriteAllText(tempFile, @"{
-  \"version\": \"1.0\",
-  \"description\": \"Teste\",
-  \"fileAndFolderExclusions\": [\"C:\\TestFolder\"],
-  \"registryExclusions\": [\"HKLM\\Software\\TestKey\"]
-}");
+            string jsonContent = "{\"version\": \"1.0\", \"description\": \"Teste\", \"fileAndFolderExclusions\": [\"C:\\TestFolder\"], \"registryExclusions\": [\"HKLM\\Software\\TestKey\"]}";
+            File.WriteAllText(tempFile, jsonContent);
 
             var profile = service.LoadProfile(tempFile);
             Assert.NotNull(profile);
