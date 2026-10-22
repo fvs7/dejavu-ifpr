@@ -1,7 +1,7 @@
-using ReaFreeze.Core.Models;
-using ReaFreeze.Core.Services;
+using Dejavu.Core.Models;
+using Dejavu.Core.Services;
 
-namespace ReaFreeze.Tests;
+namespace Dejavu.Tests;
 
 public class MockUwfController : IUwfController
 {

@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 public class OverlayMonitorService
 {

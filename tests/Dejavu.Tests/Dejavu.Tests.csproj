@@ -17,6 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ReaFreeze.Core\ReaFreeze.Core.csproj" />
+    <ProjectReference Include="..\..\src\Dejavu.Core\Dejavu.Core.csproj" />
   </ItemGroup>
 </Project>

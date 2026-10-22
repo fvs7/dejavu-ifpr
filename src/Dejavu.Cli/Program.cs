@@ -1,21 +1,21 @@
 using System.Reflection;
 using System.Text.Json;
-using ReaFreeze.Core.Models;
+using Dejavu.Core.Models;
 
-namespace ReaFreeze.Cli;
+namespace Dejavu.Cli;
 
 class Program
 {
     static int Main(string[] args)
     {
-        var logger = new ReaFreeze.Core.Services.LoggerService();
-        var thawOnce = new ReaFreeze.Core.Services.ThawOnceService(logger);
-        var uwf = new ReaFreeze.Core.Services.UwfController(logger, thawOnce);
-        var profileService = new ReaFreeze.Core.Services.ProfileService(logger);
-        var domainService = new ReaFreeze.Core.Services.DomainService(logger);
-        var thawSpaceService = new ReaFreeze.Core.Services.ThawSpaceService(logger);
-        var maintenanceService = new ReaFreeze.Core.Services.MaintenanceService(logger, uwf, thawOnce);
-        var overlayMonitor = new ReaFreeze.Core.Services.OverlayMonitorService(logger, uwf);
+        var logger = new Dejavu.Core.Services.LoggerService();
+        var thawOnce = new Dejavu.Core.Services.ThawOnceService(logger);
+        var uwf = new Dejavu.Core.Services.UwfController(logger, thawOnce);
+        var profileService = new Dejavu.Core.Services.ProfileService(logger);
+        var domainService = new Dejavu.Core.Services.DomainService(logger);
+        var thawSpaceService = new Dejavu.Core.Services.ThawSpaceService(logger);
+        var maintenanceService = new Dejavu.Core.Services.MaintenanceService(logger, uwf, thawOnce);
+        var overlayMonitor = new Dejavu.Core.Services.OverlayMonitorService(logger, uwf);
 
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
         {
@@ -72,12 +72,12 @@ class Program
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine($"[ERRO] {ex.Message}");
             Console.ResetColor();
-            logger.Log(ReaFreeze.Core.Services.LogLevel.Error, $"Erro na execução do comando '{command}'", ex);
+            logger.Log(Dejavu.Core.Services.LogLevel.Error, $"Erro na execução do comando '{command}'", ex);
             return 1;
         }
     }
 
-    static int HandleStatus(ReaFreeze.Core.Services.IUwfController uwf, string[] args)
+    static int HandleStatus(Dejavu.Core.Services.IUwfController uwf, string[] args)
     {
         bool jsonOutput = args.Any(a => a.Equals("--json", StringComparison.OrdinalIgnoreCase));
         var status = uwf.GetStatus();
@@ -90,7 +90,7 @@ class Program
         }
 
         Console.WriteLine("====================================================");
-        Console.WriteLine("             REA Freeze — Estado do Sistema          ");
+        Console.WriteLine("             Dejavu IFPR — Estado do Sistema          ");
         Console.WriteLine("====================================================");
         Console.WriteLine($"Filtro UWF Instalado:    {(status.FilterInstalled ? "Sim" : "NÃO / Indisponível")}");
 
@@ -149,7 +149,7 @@ class Program
         return 0;
     }
 
-    static int HandleFreeze(ReaFreeze.Core.Services.IUwfController uwf, string[] args)
+    static int HandleFreeze(Dejavu.Core.Services.IUwfController uwf, string[] args)
     {
         string volume = "C:";
         if (args.Length > 1 && !args[1].StartsWith("-"))
@@ -170,7 +170,7 @@ class Program
         return 0;
     }
 
-    static int HandleThaw(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ThawOnceService thawOnce, string[] args)
+    static int HandleThaw(Dejavu.Core.Services.IUwfController uwf, Dejavu.Core.Services.ThawOnceService thawOnce, string[] args)
     {
         bool once = args.Any(a => a.Equals("--once", StringComparison.OrdinalIgnoreCase));
 
@@ -198,7 +198,7 @@ class Program
         return 0;
     }
 
-    static int HandleConfigOverlay(ReaFreeze.Core.Services.IUwfController uwf, string[] args)
+    static int HandleConfigOverlay(Dejavu.Core.Services.IUwfController uwf, string[] args)
     {
         OverlayType type = OverlayType.RAM;
         uint maxMb = 4096;
@@ -232,12 +232,12 @@ class Program
         return 0;
     }
 
-    static int HandleApplyProfile(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ProfileService profileService, string[] args)
+    static int HandleApplyProfile(Dejavu.Core.Services.IUwfController uwf, Dejavu.Core.Services.ProfileService profileService, string[] args)
     {
         if (args.Length < 2)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Uso: reafreeze apply-profile <caminho-para-exclusions.json>");
+            Console.WriteLine("Uso: dejavu apply-profile <caminho-para-exclusions.json>");
             Console.ResetColor();
             return 1;
         }
@@ -252,7 +252,7 @@ class Program
         return 0;
     }
 
-    static int HandleSetupDomain(ReaFreeze.Core.Services.DomainService domainService)
+    static int HandleSetupDomain(Dejavu.Core.Services.DomainService domainService)
     {
         domainService.ConfigureDomainTrustProtection();
         Console.ForegroundColor = ConsoleColor.Green;
@@ -261,7 +261,7 @@ class Program
         return 0;
     }
 
-    static int HandleSetupThawSpace(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ThawSpaceService thawSpaceService, string[] args)
+    static int HandleSetupThawSpace(Dejavu.Core.Services.IUwfController uwf, Dejavu.Core.Services.ThawSpaceService thawSpaceService, string[] args)
     {
         string target = args.Length > 1 ? args[1] : @"C:\Persistente";
         thawSpaceService.EnsureDirectoryThawSpace(uwf, target);
@@ -271,7 +271,7 @@ class Program
         return 0;
     }
 
-    static int HandleMaintenance(ReaFreeze.Core.Services.MaintenanceService maintenanceService, string[] args)
+    static int HandleMaintenance(Dejavu.Core.Services.MaintenanceService maintenanceService, string[] args)
     {
         if (args.Length > 1 && args[1].Equals("--run", StringComparison.OrdinalIgnoreCase))
         {
@@ -286,28 +286,28 @@ class Program
         return 0;
     }
 
-    static int HandleCheckOverlay(ReaFreeze.Core.Services.OverlayMonitorService overlayMonitor)
+    static int HandleCheckOverlay(Dejavu.Core.Services.OverlayMonitorService overlayMonitor)
     {
         overlayMonitor.CheckOverlayAndEnforcePolicy();
         return 0;
     }
 
-    static int HandleFinalizeThawOnce(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ThawOnceService thawOnce, ReaFreeze.Core.Services.LoggerService logger)
+    static int HandleFinalizeThawOnce(Dejavu.Core.Services.IUwfController uwf, Dejavu.Core.Services.ThawOnceService thawOnce, Dejavu.Core.Services.LoggerService logger)
     {
         if (thawOnce.IsThawOnceActive())
         {
-            logger.Log(ReaFreeze.Core.Services.LogLevel.Info, "[Thaw-Once] Detectada inicialização descongelada. Programando recongelamento automático para o próximo boot...");
+            logger.Log(Dejavu.Core.Services.LogLevel.Info, "[Thaw-Once] Detectada inicialização descongelada. Programando recongelamento automático para o próximo boot...");
             uwf.Freeze("C:");
             thawOnce.ClearThawOnce();
-            logger.Log(ReaFreeze.Core.Services.LogLevel.Info, "[Thaw-Once] Recongelamento configurado com sucesso.");
+            logger.Log(Dejavu.Core.Services.LogLevel.Info, "[Thaw-Once] Recongelamento configurado com sucesso.");
         }
         return 0;
     }
 
     static void PrintHelp()
     {
-        Console.WriteLine("REA Freeze — Equivalente Open Source ao Deep Freeze (IFPR / REA)");
-        Console.WriteLine("Uso: reafreeze <comando> [opções]");
+        Console.WriteLine("Dejavu IFPR — Equivalente Open Source ao Deep Freeze (IFPR / REA)");
+        Console.WriteLine("Uso: dejavu <comando> [opções]");
         Console.WriteLine();
         Console.WriteLine("Comandos:");
         Console.WriteLine("  status [--json]                        Exibe o estado de congelamento, volumes e overlay");

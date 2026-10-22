@@ -3,7 +3,7 @@
 * **Status:** Proposta (Aguardando aprovação para Fase 1)
 * **Data:** 22/10/2026
 * **Autor:** Fernando Vieira (Técnico de TI - IFPR União da Vitória)
-* **Contexto:** Projeto REA Freeze — Restauração de estado limpo a cada reinicialização nos computadores dos laboratórios acadêmicos.
+* **Contexto:** Projeto Dejavu IFPR — Restauração de estado limpo a cada reinicialização nos computadores dos laboratórios acadêmicos.
 
 ---
 
@@ -68,7 +68,7 @@ Para laboratórios com dual-boot (ex.: Xubuntu / Debian / Arch):
 | **Desempenho I/O** | **Máximo** (leituras SSD, escritas em RAM) | Reduzido (overhead de VHDX dinâmico) | **Máximo** (RAM / tmpfs) |
 | **Exclusões Granulares** | **Nativas** (arquivos, pastas, registry via WMI) | Difícil (exige partições extras) | Nativas via bind mount |
 | **Compatibilidade AD / Domínio** | **Alta** (exclusão Netlogon documentada) | Complexa (risco de dessincronia) | Alta (via SSSD/Kerberos) |
-| **Atualização da Imagem-Base** | **Fácil** (`reafreeze thaw` -> update -> `freeze`) | Complexa (merge de VHDs ou boot no pai) | Simples (`overlayroot-chroot`) |
+| **Atualização da Imagem-Base** | **Fácil** (`dejavu thaw` -> update -> `freeze`) | Complexa (merge de VHDs ou boot no pai) | Simples (`overlayroot-chroot`) |
 | **Integração com FOG Project** | **Perfeita** (partição NTFS normal) | Ruim (imagens gigantes de VHD) | Perfeita |
 
 ---
@@ -76,7 +76,7 @@ Para laboratórios com dual-boot (ex.: Xubuntu / Debian / Arch):
 ## 4. Decisão Recomendada
 
 1. **Ambiente Windows (Foco Principal do Lab 3):**
-   * **Adotar a Opção A: Unified Write Filter (UWF)** como mecanismo central do **REA Freeze**.
+   * **Adotar a Opção A: Unified Write Filter (UWF)** como mecanismo central do **Dejavu IFPR**.
    * **Justificativa:** É a solução mais alinhada à estabilidade em laboratórios de informática, possui suporte nativo a exclusões granulares (cruciais para não quebrar a relação de confiança com o Active Directory/Zentyal e permitir atualização do antivírus/Veyon) e integra-se perfeitamente com a infraestrutura de deploy do FOG Project já em uso.
    * **Verificação de Edição:** Se a imagem base instalada for Windows 11 Pro, ela deve ser ativada como **Windows 11 Education** utilizando a chave de licenciamento acadêmico institucional do IFPR (procedimento suportado pela Microsoft com `changepk.exe /ProductKey <chave-education>` sem reinstalação).
 
@@ -87,7 +87,7 @@ Para laboratórios com dual-boot (ex.: Xubuntu / Debian / Arch):
 
 ## 5. Próximos Passos (Fase 1)
 Com a aprovação desta ADR:
-1. Desenvolvimento da ferramenta CLI `reafreeze.exe` em C# .NET 8 utilizando o namespace WMI `root\standardcimv2\embedded`.
+1. Desenvolvimento da ferramenta CLI `dejavu.exe` em C# .NET 8 utilizando o namespace WMI `root\standardcimv2\embedded`.
 2. Implementação dos comandos `status`, `freeze`, `thaw` e `thaw --once`.
 3. Perfil de exclusões padrão em JSON (`exclusions.json`).
-4. Logging no Windows Event Log (fonte `REA Freeze`) e arquivo local rotacionado.
+4. Logging no Windows Event Log (fonte `Dejavu IFPR`) e arquivo local rotacionado.

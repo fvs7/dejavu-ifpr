@@ -1,4 +1,4 @@
-# REA Freeze
+# Dejavu IFPR
 
 Equivalente Open Source ao Deep Freeze para laboratórios acadêmicos do **IFPR – Campus União da Vitória**.
 

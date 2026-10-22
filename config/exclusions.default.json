@@ -1,8 +1,8 @@
 {
   "version": "1.0",
-  "description": "Perfil padrão de exclusões REA Freeze para laboratórios acadêmicos do IFPR",
+  "description": "Perfil padrão de exclusões Dejavu IFPR para laboratórios acadêmicos do IFPR",
   "fileAndFolderExclusions": [
-    "C:\\ProgramData\\ReaFreeze",
+    "C:\\ProgramData\\Dejavu",
     "C:\\ProgramData\\Veyon",
     "C:\\ProgramData\\Microsoft\\Windows Defender",
     "C:\\Windows\\System32\\GroupPolicy",
@@ -11,7 +11,7 @@
   ],
   "registryExclusions": [
     "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
-    "HKLM\\SOFTWARE\\ReaFreeze",
+    "HKLM\\SOFTWARE\\Dejavu",
     "HKLM\\SOFTWARE\\Veyon",
     "HKLM\\SOFTWARE\\Microsoft\\Windows Defender",
     "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender"

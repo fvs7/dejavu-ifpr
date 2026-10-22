@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace ReaFreeze.Core.Services;
+namespace Dejavu.Core.Services;
 
 public class DomainService
 {

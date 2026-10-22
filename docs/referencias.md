@@ -1,9 +1,9 @@
 # Referências Técnicas e Registro Clean-Room
 
-Este documento registra formalmente as referências públicas consultadas para o desenvolvimento do **REA Freeze**.
+Este documento registra formalmente as referências públicas consultadas para o desenvolvimento do **Dejavu IFPR**.
 
 ## Política Clean-Room
-O projeto REA Freeze é desenvolvido em estrita conformidade com o método **Clean-Room**:
+O projeto Dejavu IFPR é desenvolvido em estrita conformidade com o método **Clean-Room**:
 1. Nenhum binário, driver de kernel (`DeepFrz.sys`), instalador ou documentação confidencial da Faronics Corporation foi descompilado, desmontado, extraído ou reutilizado.
 2. Apenas manuais de usuário, fichas técnicas e páginas públicas de produto foram consultados para entender o comportamento funcional esperado (modos *Frozen*, *Thawed*, *ThawSpace* e janelas de manutenção).
 3. Todas as implementações utilizam recursos nativos e documentados dos sistemas operacionais (Microsoft Windows e Linux).
