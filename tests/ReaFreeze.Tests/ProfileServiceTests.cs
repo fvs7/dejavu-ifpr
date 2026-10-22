@@ -39,15 +39,15 @@ public class ProfileServiceTests
         var profile = new ReaFreeze.Core.Models.ExclusionProfile
         {
             Version = "1.0",
-            FileAndFolderExclusions = { "C:\ProgramData\Veyon", "C:\Persistente" },
-            RegistryExclusions = { "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" }
+            FileAndFolderExclusions = { @"C:\ProgramData\Veyon", @"C:\Persistente" },
+            RegistryExclusions = { @"HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" }
         };
 
         service.ApplyProfile(mock, profile);
 
         Assert.Equal(2, mock.AddedFileExclusions.Count);
         Assert.Single(mock.AddedRegistryExclusions);
-        Assert.Contains("C:\Persistente", mock.AddedFileExclusions);
-        Assert.Contains("HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters", mock.AddedRegistryExclusions);
+        Assert.Contains(@"C:\Persistente", mock.AddedFileExclusions);
+        Assert.Contains(@"HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters", mock.AddedRegistryExclusions);
     }
 }
