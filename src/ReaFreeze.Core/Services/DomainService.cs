@@ -28,12 +28,12 @@ public class DomainService
                 // 1 = Desativa a rotação automática da senha de máquina pelo cliente,
                 // impedindo a perda de relação de confiança com o Active Directory.
                 key.SetValue("DisablePasswordChange", 1, RegistryValueKind.DWord);
-                _logger.Log(LogLevel.Info, "[Domínio] Chave Netlogon\DisablePasswordChange definida como 1 (proteção de confiança AD ativa).");
+                _logger.Log(LogLevel.Info, @"[Domínio] Chave Netlogon\DisablePasswordChange definida como 1 (proteção de confiança AD ativa).");
             }
         }
         catch (Exception ex)
         {
-            _logger.Log(LogLevel.Error, "[Domínio] Falha ao configurar chave Netlogon\DisablePasswordChange no registro.", ex);
+            _logger.Log(LogLevel.Error, @"[Domínio] Falha ao configurar chave Netlogon\DisablePasswordChange no registro.", ex);
             throw;
         }
     }

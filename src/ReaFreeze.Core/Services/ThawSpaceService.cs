@@ -23,7 +23,7 @@ public class ThawSpaceService
             }
 
             // Determina a letra da unidade (ex: "C:")
-            string root = Path.GetPathRoot(directoryPath) ?? "C:\";
+            string root = Path.GetPathRoot(directoryPath) ?? @"C:\";
             string drive = root.TrimEnd('\\');
 
             uwf.AddFileExclusion(drive, directoryPath);
