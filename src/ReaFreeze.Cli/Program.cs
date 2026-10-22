@@ -12,6 +12,10 @@ class Program
         var thawOnce = new ReaFreeze.Core.Services.ThawOnceService(logger);
         var uwf = new ReaFreeze.Core.Services.UwfController(logger, thawOnce);
         var profileService = new ReaFreeze.Core.Services.ProfileService(logger);
+        var domainService = new ReaFreeze.Core.Services.DomainService(logger);
+        var thawSpaceService = new ReaFreeze.Core.Services.ThawSpaceService(logger);
+        var maintenanceService = new ReaFreeze.Core.Services.MaintenanceService(logger, uwf, thawOnce);
+        var overlayMonitor = new ReaFreeze.Core.Services.OverlayMonitorService(logger, uwf);
 
         if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
         {
@@ -39,6 +43,18 @@ class Program
 
                 case "apply-profile":
                     return HandleApplyProfile(uwf, profileService, args);
+
+                case "setup-domain":
+                    return HandleSetupDomain(domainService);
+
+                case "setup-thawspace":
+                    return HandleSetupThawSpace(uwf, thawSpaceService, args);
+
+                case "maintenance":
+                    return HandleMaintenance(maintenanceService, args);
+
+                case "check-overlay":
+                    return HandleCheckOverlay(overlayMonitor);
 
                 case "--finalize-thaw-once":
                     return HandleFinalizeThawOnce(uwf, thawOnce, logger);
@@ -236,6 +252,46 @@ class Program
         return 0;
     }
 
+    static int HandleSetupDomain(ReaFreeze.Core.Services.DomainService domainService)
+    {
+        domainService.ConfigureDomainTrustProtection();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("[OK] Proteção de relação de confiança com o Domínio AD configurada (DisablePasswordChange=1).");
+        Console.ResetColor();
+        return 0;
+    }
+
+    static int HandleSetupThawSpace(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ThawSpaceService thawSpaceService, string[] args)
+    {
+        string target = args.Length > 1 ? args[1] : @"C:\Persistente";
+        thawSpaceService.EnsureDirectoryThawSpace(uwf, target);
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"[OK] Thaw Space configurado com exclusão permanente em: {target}");
+        Console.ResetColor();
+        return 0;
+    }
+
+    static int HandleMaintenance(ReaFreeze.Core.Services.MaintenanceService maintenanceService, string[] args)
+    {
+        if (args.Length > 1 && args[1].Equals("--run", StringComparison.OrdinalIgnoreCase))
+        {
+            maintenanceService.ExecuteMaintenanceRoutine();
+            return 0;
+        }
+
+        maintenanceService.ScheduleMaintenanceWindow();
+        Console.ForegroundColor = ConsoleColor.Magenta;
+        Console.WriteLine("[OK] Janela de manutenção agendada! O sistema entrará em Thaw no próximo boot e executará as atualizações antes de recongelar.");
+        Console.ResetColor();
+        return 0;
+    }
+
+    static int HandleCheckOverlay(ReaFreeze.Core.Services.OverlayMonitorService overlayMonitor)
+    {
+        overlayMonitor.CheckOverlayAndEnforcePolicy();
+        return 0;
+    }
+
     static int HandleFinalizeThawOnce(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ThawOnceService thawOnce, ReaFreeze.Core.Services.LoggerService logger)
     {
         if (thawOnce.IsThawOnceActive())
@@ -263,5 +319,9 @@ class Program
         Console.WriteLine("     --warn-mb <MB>                       Alerta de limite (ex: 3072)");
         Console.WriteLine("     --crit-mb <MB>                       Limite crítico (ex: 3840)");
         Console.WriteLine("  apply-profile <arquivo.json>           Aplica perfil versionado de exclusões");
+        Console.WriteLine("  setup-domain                           Configura registro para manter relação de confiança com AD");
+        Console.WriteLine("  setup-thawspace [pasta]                Cria e exclui pasta persistente (padrão: C:\\Persistente)");
+        Console.WriteLine("  maintenance [--run]                    Agenda janela de manutenção (--run executa a rotina)");
+        Console.WriteLine("  check-overlay                          Verifica uso de overlay e reinicia se atingir nível crítico");
     }
 }

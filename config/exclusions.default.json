@@ -6,12 +6,14 @@
     "C:\\ProgramData\\Veyon",
     "C:\\ProgramData\\Microsoft\\Windows Defender",
     "C:\\Windows\\System32\\GroupPolicy",
+    "C:\\Windows\\System32\\winevt\\Logs",
     "C:\\Persistente"
   ],
   "registryExclusions": [
     "HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
     "HKLM\\SOFTWARE\\ReaFreeze",
     "HKLM\\SOFTWARE\\Veyon",
-    "HKLM\\SOFTWARE\\Microsoft\\Windows Defender"
+    "HKLM\\SOFTWARE\\Microsoft\\Windows Defender",
+    "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender"
   ]
 }
