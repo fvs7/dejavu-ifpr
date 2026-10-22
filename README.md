@@ -18,4 +18,6 @@ Garantir que, a cada reinicialização, os computadores dos laboratórios retorn
 ---
 ## Documentação de Arquitetura
 * [ADR 001 — Comparativo e Decisão de Mecanismo](docs/ADR-001-mecanismo.md)
+* [ADR 002 — Compatibilidade com Active Directory](docs/ADR-002-dominio-ad.md)
+* [Guia de Implantação no Laboratório](docs/guia-implantacao.md)
 * [Referências e Registro Clean-Room](docs/referencias.md)

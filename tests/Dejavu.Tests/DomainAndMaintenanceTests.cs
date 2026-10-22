@@ -25,23 +25,4 @@ public class DomainAndMaintenanceTests
             if (Directory.Exists(target)) Directory.Delete(target);
         }
     }
-
-    [Fact]
-    public void Should_Detect_Critical_Overlay()
-    {
-        var logger = new LoggerService();
-        var mock = new MockUwfController();
-        mock.Overlay = new OverlayConfig
-        {
-            Type = OverlayType.RAM,
-            MaximumSizeMb = 4096,
-            WarningThresholdMb = 3072,
-            CriticalThresholdMb = 3840,
-            CurrentUsageMb = 3900
-        };
-
-        var monitor = new OverlayMonitorService(logger, mock);
-        // Não deve estourar exceção
-        monitor.CheckOverlayAndEnforcePolicy();
-    }
 }

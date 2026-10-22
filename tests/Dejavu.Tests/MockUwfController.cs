@@ -11,6 +11,7 @@ public class MockUwfController : IUwfController
     public List<string> AddedFileExclusions { get; } = new();
     public List<string> AddedRegistryExclusions { get; } = new();
     public OverlayConfig Overlay { get; set; } = new();
+    public int RestartCount { get; private set; }
 
     public bool IsUwfInstalled() => Installed;
 
@@ -62,5 +63,5 @@ public class MockUwfController : IUwfController
         AddedRegistryExclusions.Remove(key);
     }
 
-    public void RestartSystem() { }
+    public void RestartSystem() => RestartCount++;
 }
