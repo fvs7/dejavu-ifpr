@@ -6,7 +6,8 @@ public enum LogLevel
 {
     Info,
     Warning,
-    Error
+    Error,
+    Critical
 }
 
 public class LoggerService
