@@ -1,0 +1,267 @@
+using System.Reflection;
+using System.Text.Json;
+using ReaFreeze.Core.Models;
+
+namespace ReaFreeze.Cli;
+
+class Program
+{
+    static int Main(string[] args)
+    {
+        var logger = new ReaFreeze.Core.Services.LoggerService();
+        var thawOnce = new ReaFreeze.Core.Services.ThawOnceService(logger);
+        var uwf = new ReaFreeze.Core.Services.UwfController(logger, thawOnce);
+        var profileService = new ReaFreeze.Core.Services.ProfileService(logger);
+
+        if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
+        {
+            PrintHelp();
+            return 0;
+        }
+
+        string command = args[0].ToLowerInvariant();
+
+        try
+        {
+            switch (command)
+            {
+                case "status":
+                    return HandleStatus(uwf, args);
+
+                case "freeze":
+                    return HandleFreeze(uwf, args);
+
+                case "thaw":
+                    return HandleThaw(uwf, thawOnce, args);
+
+                case "config-overlay":
+                    return HandleConfigOverlay(uwf, args);
+
+                case "apply-profile":
+                    return HandleApplyProfile(uwf, profileService, args);
+
+                case "--finalize-thaw-once":
+                    return HandleFinalizeThawOnce(uwf, thawOnce, logger);
+
+                default:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Comando desconhecido: {args[0]}");
+                    Console.ResetColor();
+                    PrintHelp();
+                    return 1;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[ERRO] {ex.Message}");
+            Console.ResetColor();
+            logger.Log(ReaFreeze.Core.Services.LogLevel.Error, $"Erro na execução do comando '{command}'", ex);
+            return 1;
+        }
+    }
+
+    static int HandleStatus(ReaFreeze.Core.Services.IUwfController uwf, string[] args)
+    {
+        bool jsonOutput = args.Any(a => a.Equals("--json", StringComparison.OrdinalIgnoreCase));
+        var status = uwf.GetStatus();
+
+        if (jsonOutput)
+        {
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            Console.WriteLine(JsonSerializer.Serialize(status, jsonOptions));
+            return 0;
+        }
+
+        Console.WriteLine("====================================================");
+        Console.WriteLine("             REA Freeze — Estado do Sistema          ");
+        Console.WriteLine("====================================================");
+        Console.WriteLine($"Filtro UWF Instalado:    {(status.FilterInstalled ? "Sim" : "NÃO / Indisponível")}");
+
+        string currentDesc = status.CurrentEnabled ? "CONGELADO (Frozen)" : "DESCONGELADO (Thawed)";
+        string nextDesc = status.NextEnabled ? "CONGELADO (Frozen)" : "DESCONGELADO (Thawed)";
+
+        Console.ForegroundColor = status.CurrentEnabled ? ConsoleColor.Cyan : ConsoleColor.Yellow;
+        Console.WriteLine($"Estado Atual (Sessão):   {currentDesc}");
+        Console.ForegroundColor = status.NextEnabled ? ConsoleColor.Cyan : ConsoleColor.Yellow;
+        Console.WriteLine($"Estado Próximo Boot:     {nextDesc}");
+        Console.ResetColor();
+
+        if (status.ThawOncePending)
+        {
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine("Modo Thaw-Once:          ATIVO (Recongelamento automático no próximo boot)");
+            Console.ResetColor();
+        }
+
+        Console.WriteLine("----------------------------------------------------");
+        Console.WriteLine("Configuração do Overlay:");
+        Console.WriteLine($"  Tipo:                 {status.Overlay.Type}");
+        Console.WriteLine($"  Tamanho Máximo:       {status.Overlay.MaximumSizeMb} MB");
+        Console.WriteLine($"  Alerta (Warning):     {status.Overlay.WarningThresholdMb} MB");
+        Console.WriteLine($"  Crítico (Critical):   {status.Overlay.CriticalThresholdMb} MB");
+        Console.WriteLine($"  Uso Atual:            {status.Overlay.CurrentUsageMb} MB");
+
+        Console.WriteLine("----------------------------------------------------");
+        Console.WriteLine("Volumes Protegidos:");
+        foreach (var vol in status.Volumes)
+        {
+            Console.WriteLine($"  Volume {vol.DriveLetter} -> Atual: {(vol.CurrentProtected ? "Protegido" : "Desprotegido")} | Próximo: {(vol.NextProtected ? "Protegido" : "Desprotegido")}");
+        }
+
+        Console.WriteLine("----------------------------------------------------");
+        Console.WriteLine($"Exclusões de Arquivo ({status.FileExclusions.Count}):");
+        foreach (var f in status.FileExclusions.Take(5))
+        {
+            Console.WriteLine($"  - {f}");
+        }
+        if (status.FileExclusions.Count > 5)
+        {
+            Console.WriteLine($"  ... e mais {status.FileExclusions.Count - 5} exclusões.");
+        }
+
+        Console.WriteLine($"Exclusões de Registro ({status.RegistryExclusions.Count}):");
+        foreach (var r in status.RegistryExclusions.Take(5))
+        {
+            Console.WriteLine($"  - {r}");
+        }
+        if (status.RegistryExclusions.Count > 5)
+        {
+            Console.WriteLine($"  ... e mais {status.RegistryExclusions.Count - 5} exclusões.");
+        }
+        Console.WriteLine("====================================================");
+        return 0;
+    }
+
+    static int HandleFreeze(ReaFreeze.Core.Services.IUwfController uwf, string[] args)
+    {
+        string volume = "C:";
+        if (args.Length > 1 && !args[1].StartsWith("-"))
+        {
+            volume = args[1];
+        }
+
+        uwf.Freeze(volume);
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"[OK] Sistema configurado para CONGELADO (Frozen) no volume {volume} a partir do próximo boot.");
+        Console.ResetColor();
+
+        if (args.Any(a => a.Equals("--restart", StringComparison.OrdinalIgnoreCase)))
+        {
+            Console.WriteLine("Reiniciando o sistema agora...");
+            uwf.RestartSystem();
+        }
+        return 0;
+    }
+
+    static int HandleThaw(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ThawOnceService thawOnce, string[] args)
+    {
+        bool once = args.Any(a => a.Equals("--once", StringComparison.OrdinalIgnoreCase));
+
+        uwf.Thaw();
+
+        if (once)
+        {
+            thawOnce.ArmThawOnce();
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine("[OK] Modo Thaw-Once ATIVADO: O sistema estará DESCONGELADO no próximo boot e será recongelado automaticamente no boot seguinte.");
+            Console.ResetColor();
+        }
+        else
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("[OK] Sistema configurado para DESCONGELADO (Thawed) permanente a partir do próximo boot.");
+            Console.ResetColor();
+        }
+
+        if (args.Any(a => a.Equals("--restart", StringComparison.OrdinalIgnoreCase)))
+        {
+            Console.WriteLine("Reiniciando o sistema agora...");
+            uwf.RestartSystem();
+        }
+        return 0;
+    }
+
+    static int HandleConfigOverlay(ReaFreeze.Core.Services.IUwfController uwf, string[] args)
+    {
+        OverlayType type = OverlayType.RAM;
+        uint maxMb = 4096;
+        uint warnMb = 3072;
+        uint critMb = 3840;
+
+        for (int i = 1; i < args.Length; i++)
+        {
+            if (args[i].Equals("--type", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                type = args[++i].Equals("disk", StringComparison.OrdinalIgnoreCase) ? OverlayType.Disk : OverlayType.RAM;
+            }
+            else if (args[i].Equals("--max-mb", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                maxMb = uint.Parse(args[++i]);
+            }
+            else if (args[i].Equals("--warn-mb", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                warnMb = uint.Parse(args[++i]);
+            }
+            else if (args[i].Equals("--crit-mb", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                critMb = uint.Parse(args[++i]);
+            }
+        }
+
+        uwf.ConfigureOverlay(type, maxMb, warnMb, critMb);
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"[OK] Overlay configurado: Tipo={type}, Max={maxMb}MB, Warning={warnMb}MB, Critical={critMb}MB");
+        Console.ResetColor();
+        return 0;
+    }
+
+    static int HandleApplyProfile(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ProfileService profileService, string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Uso: reafreeze apply-profile <caminho-para-exclusions.json>");
+            Console.ResetColor();
+            return 1;
+        }
+
+        string jsonPath = args[1];
+        var profile = profileService.LoadProfile(jsonPath);
+        profileService.ApplyProfile(uwf, profile);
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"[OK] Perfil '{profile.Description}' (v{profile.Version}) aplicado com sucesso.");
+        Console.ResetColor();
+        return 0;
+    }
+
+    static int HandleFinalizeThawOnce(ReaFreeze.Core.Services.IUwfController uwf, ReaFreeze.Core.Services.ThawOnceService thawOnce, ReaFreeze.Core.Services.LoggerService logger)
+    {
+        if (thawOnce.IsThawOnceActive())
+        {
+            logger.Log(ReaFreeze.Core.Services.LogLevel.Info, "[Thaw-Once] Detectada inicialização descongelada. Programando recongelamento automático para o próximo boot...");
+            uwf.Freeze("C:");
+            thawOnce.ClearThawOnce();
+            logger.Log(ReaFreeze.Core.Services.LogLevel.Info, "[Thaw-Once] Recongelamento configurado com sucesso.");
+        }
+        return 0;
+    }
+
+    static void PrintHelp()
+    {
+        Console.WriteLine("REA Freeze — Equivalente Open Source ao Deep Freeze (IFPR / REA)");
+        Console.WriteLine("Uso: reafreeze <comando> [opções]");
+        Console.WriteLine();
+        Console.WriteLine("Comandos:");
+        Console.WriteLine("  status [--json]                        Exibe o estado de congelamento, volumes e overlay");
+        Console.WriteLine("  freeze [volume] [--restart]            Congela o sistema no próximo boot (padrão: C:)");
+        Console.WriteLine("  thaw [--once] [--restart]              Descongela o sistema. --once re-congela no boot seguinte");
+        Console.WriteLine("  config-overlay [opções]                Ajusta tamanho e limites de aviso do overlay");
+        Console.WriteLine("     --type <ram|disk>                    Tipo do cache de overlay");
+        Console.WriteLine("     --max-mb <MB>                        Tamanho máximo do overlay (ex: 4096)");
+        Console.WriteLine("     --warn-mb <MB>                       Alerta de limite (ex: 3072)");
+        Console.WriteLine("     --crit-mb <MB>                       Limite crítico (ex: 3840)");
+        Console.WriteLine("  apply-profile <arquivo.json>           Aplica perfil versionado de exclusões");
+    }
+}
